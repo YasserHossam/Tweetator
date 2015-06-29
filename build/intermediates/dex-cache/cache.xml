@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items version="2" >
+
+    <item
+        jar="G:\Tweetator\app\build\intermediates\exploded-aar\com.android.support\support-v4\22.1.1\jars\libs\internal_impl-22.1.1.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="9e070ad32b2700b0343e8e0cccc437733d91ba3a">
+        <dex dex="G:\Tweetator\app\build\intermediates\pre-dexed\debug\internal_impl-22.1.1-a5186cccec4a371676316e33eff57a87ec9d0fed.jar" />
+    </item>
+    <item
+        jar="G:\Tweetator\app\build\intermediates\exploded-aar\com.android.support\appcompat-v7\22.1.1\jars\classes.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="a3ff3c506644c820eb2bdf06e8339f72be578551">
+        <dex dex="G:\Tweetator\app\build\intermediates\pre-dexed\debug\classes-07c12f1bb6b9aca293797e79e5b64cfa4979ae11.jar" />
+    </item>
+    <item
+        jar="C:\Users\ZAxss_000\AppData\Local\Android\sdk\extras\android\m2repository\com\android\support\support-annotations\22.1.1\support-annotations-22.1.1.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="01d051a6bfb1218b1db2d3a5af0480ac2c25c42a">
+        <dex dex="G:\Tweetator\app\build\intermediates\pre-dexed\debug\support-annotations-22.1.1-a022880de8e9b4a9dbac88a5ea04331c5fc26194.jar" />
+    </item>
+    <item
+        jar="G:\Tweetator\app\build\intermediates\exploded-aar\com.android.support\support-v4\22.1.1\jars\classes.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="c95ba8152923e4872e86a82cfcba9a51c0214328">
+        <dex dex="G:\Tweetator\app\build\intermediates\pre-dexed\debug\classes-91a490180a2a783da36b17536488ff4db690dfb1.jar" />
+    </item>
+    <item
+        jar="G:\Tweetator\app\libs\twitter4j-core-4.0.3.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="cb244e5be126bf0a8114c8a64a5d26c6490b9ef2">
+        <dex dex="G:\Tweetator\app\build\intermediates\pre-dexed\debug\twitter4j-core-4.0.3-bcebb21d6326cfb7fee1ef6b09e794fb4c3eaa64.jar" />
+    </item>
+
+</items>
