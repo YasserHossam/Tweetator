@@ -39,8 +39,8 @@
         <ListView
             android:id="@+id/tweetsListView"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@color/material_blue_grey_800">
+            android:layout_height="wrap_content"
+            android:background="#ff45b5d4">
         </ListView>
         <ProgressBar
             android:id="@+id/loadingBar"
@@ -51,6 +51,12 @@
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"/>
     </RelativeLayout>
-
+        <fragment
+            android:name="com.yasser.tweetator.OptionMenuFragment"
+            android:id="@+id/menuFragment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center">
+        </fragment>
 
 </LinearLayout>

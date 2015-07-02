@@ -75,11 +75,11 @@ public class TweetStatusAdapter extends ArrayAdapter<TweetStatus>
         if(tweetStatus.isRetweeted)
             holder.retweet.setImageResource(R.drawable.retweet_on);
         holder.favourite.setOnClickListener(tweetListener);
-        holder.favourite.setTag("favourite%" + tweetStatus.tweetID);
+        holder.favourite.setTag("favourite%" + tweetStatus.tweetID + "%" + tweetStatus.isFavourited);
         holder.reply.setOnClickListener(tweetListener);
-        holder.reply.setTag("reply%" + tweetStatus.tweetID+"%"+tweetStatus.userName);
+        holder.reply.setTag("reply%" + tweetStatus.tweetID + "%" + tweetStatus.userName);
         holder.retweet.setOnClickListener(tweetListener);
-        holder.retweet.setTag("retweet%"+tweetStatus.tweetID);
+        holder.retweet.setTag("retweet%"+tweetStatus.tweetID+"%"+tweetStatus.isRetweeted+"%"+tweetStatus.currentUserRetweetId);
         return row;
     }
     static class TweetStatusHolder
@@ -95,28 +95,53 @@ public class TweetStatusAdapter extends ArrayAdapter<TweetStatus>
         {
             String[] tags;
             String userName=null;
+            boolean isFavouritedOrRetweeted=false;
             ImageButton clickedButton=(ImageButton)v;
             tags=((String)(v.getTag())).split("%");
             String buttonType=tags[0];
-            long tweetID=Long.valueOf(tags[1]).longValue();
-            if(tags.length>=3)
+            long tweetID=Long.valueOf(tags[1]).longValue(),currentUserRetweetId=0;
+            if(buttonType.equals("reply"))
             {
                 userName=tags[2];
             }
+            else
+            {
+                isFavouritedOrRetweeted=Boolean.valueOf(tags[2]);
+            }
             if(buttonType.equals("favourite"))
             {
-                clickedButton.setImageResource(R.drawable.favorite_on);
+                if(!isFavouritedOrRetweeted)
+                {
+                    clickedButton.setImageResource(R.drawable.favorite_on);
+                    v.setTag("favourite%" + tweetID + "%" + true);
+                }
+                else
+                {
+                    clickedButton.setImageResource(R.drawable.favorite_hover);
+                    v.setTag("favourite%" + tweetID + "%" + false);
+                }
             }
-                if(buttonType.equals("retweet"))
+            if(buttonType.equals("retweet"))
+            {
+                currentUserRetweetId=Long.valueOf(tags[3]);
+                if(!isFavouritedOrRetweeted)
                 {
                     clickedButton.setImageResource(R.drawable.retweet_on);
+                    v.setTag("retweet%" + tweetID + "%" + true + "%"+currentUserRetweetId);
                 }
+                    else {
+                    clickedButton.setImageResource(R.drawable.retweet_hover);
+                    v.setTag("retweet%" + tweetID + "%" + false+"%"+currentUserRetweetId);
+                }
+            }
 
             Intent intent=new Intent(v.getContext(),TimelineActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             intent.putExtra("buttonType",buttonType);
             intent.putExtra("tweetID",tweetID);
             intent.putExtra("userName",userName);
+            intent.putExtra("isFavouritedOrIsRetweeted",isFavouritedOrRetweeted);
+            intent.putExtra("curretUserRetweetId",currentUserRetweetId);
             v.getContext().startActivity(intent);
         }
     };

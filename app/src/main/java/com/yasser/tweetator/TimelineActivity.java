@@ -2,14 +2,17 @@ package com.yasser.tweetator;
 
 import android.app.Activity;
 import android.app.Application;
+import android.app.Fragment;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.media.Image;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
+import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,6 +20,7 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ExpandableListView;
+import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
@@ -32,6 +36,8 @@ import java.util.List;
 import TwitterHelper.App;
 import TwitterHelper.TweetStatus;
 import TwitterHelper.TweetStatusAdapter;
+import twitter4j.AccountSettings;
+import twitter4j.Paging;
 import twitter4j.Twitter;
 import twitter4j.Status;
 import twitter4j.TwitterException;
@@ -45,7 +51,7 @@ import twitter4j.conf.ConfigurationBuilder;
  */
 
 
-public class TimelineActivity extends Activity implements View.OnClickListener
+public class TimelineActivity extends FragmentActivity implements View.OnClickListener
 {
     private Twitter tweetator;
     /**request token for accessing user account*/
@@ -68,10 +74,16 @@ public class TimelineActivity extends Activity implements View.OnClickListener
     Button newTweetButton;
     EditText newTweetEditText;
     String tweetToSend;
+    Button moreTweets;
     View.OnClickListener listener;
-    long tweetID;
+    long tweetID,currentUserRetweetId;
     boolean tweetState;
     String userName;
+    boolean isFavouritedOrIsRetweeted;
+    Paging tweetsPage;
+    OptionMenuFragment menuFragment;
+    ImageButton signoutButton;
+    int pageNumber;
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
@@ -81,16 +93,27 @@ public class TimelineActivity extends Activity implements View.OnClickListener
         currentActivity=app.getContext();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.timeline_layout);
+        tweetsPage=new Paging();
         newTweetEditText=(EditText)findViewById(R.id.newTweetEditText);
         newTweetButton=(Button)findViewById(R.id.newTweetButton);
         newTweetButton.setOnClickListener(this);
         newTweetButton.setTag("newTweet");
         loadingBar=(ProgressBar)findViewById(R.id.loadingBar);
         tweetsListView=(ListView)findViewById(R.id.tweetsListView);
+        View footerView = ((LayoutInflater) currentActivity.getSystemService(Context.LAYOUT_INFLATER_SERVICE)).inflate(R.layout.timeline_listview_footer, null, false);
+        menuFragment=(OptionMenuFragment)getFragmentManager().findFragmentById(R.id.menuFragment);
+        View optionMenuFragment=menuFragment.getView();
+        signoutButton=(ImageButton)optionMenuFragment.findViewById(R.id.signoutButton);
+        signoutButton.setOnClickListener(this);
+        signoutButton.setTag("signout");
+        moreTweets=(Button)footerView.findViewById(R.id.moreTweets);
+        moreTweets.setTag("moreTweets");
+        moreTweets.setOnClickListener(this);
+        tweetsListView.addFooterView(footerView);
         tweetatorPrefs=getSharedPreferences("TweetatorPrefs",0);
         String userToken = tweetatorPrefs.getString("user_token", null);
         String userSecret = tweetatorPrefs.getString("user_secret", null);
-        tweets=new ArrayList<TweetStatus>() ;
+        tweets=new ArrayList<TweetStatus>();
         //create new configuration
         Configuration twitConf = new ConfigurationBuilder()
                 .setOAuthConsumerKey(TWIT_KEY)
@@ -114,7 +137,10 @@ public class TimelineActivity extends Activity implements View.OnClickListener
             {
                 try
                 {
-                    List<twitter4j.Status> homeTimeline = tweetator.getHomeTimeline();
+                    pageNumber=1;
+                    tweetsPage.setPage(1);
+                    tweetsPage.setCount(20);
+                    List<twitter4j.Status> homeTimeline = tweetator.getHomeTimeline(tweetsPage);
                     for(int i=0 ;i<homeTimeline.size();i++)
                     {
                         TweetStatus ts=new TweetStatus(homeTimeline.get(i));
@@ -165,6 +191,8 @@ public class TimelineActivity extends Activity implements View.OnClickListener
         String buttonType=intent.getStringExtra("buttonType");
         userName=(String)intent.getStringExtra("userName");
         tweetID=(long)intent.getLongExtra("tweetID", 1);
+        currentUserRetweetId=(long)intent.getLongExtra("curretUserRetweetId",0);
+        isFavouritedOrIsRetweeted=intent.getBooleanExtra("isFavouritedOrIsRetweeted",false);
         switch (buttonType)
         {
             case "favourite":
@@ -181,7 +209,14 @@ public class TimelineActivity extends Activity implements View.OnClickListener
                     {
                         try
                         {
+                            if(!isFavouritedOrIsRetweeted)
+                            {
                                 twitter4j.Status status = tweetator.createFavorite(tweetID);
+                            }
+                            else
+                            {
+                                twitter4j.Status status = tweetator.destroyFavorite(tweetID);
+                            }
                         }
                         catch (TwitterException exc)
                         {
@@ -221,7 +256,14 @@ public class TimelineActivity extends Activity implements View.OnClickListener
                     {
                         try
                         {
-                            tweetator.retweetStatus(tweetID);
+                            if(!isFavouritedOrIsRetweeted)
+                            {
+                                tweetator.retweetStatus(tweetID);
+                            }
+                            else
+                            {
+                               tweetator.destroyStatus(currentUserRetweetId);
+                            }
                         }
                         catch (TwitterException exc)
                         {
@@ -258,6 +300,60 @@ public class TimelineActivity extends Activity implements View.OnClickListener
         String s=v.getTag().toString();
         switch (s)
         {
+            case "signout":
+                tweetatorPrefs.edit().clear().commit();
+                Intent intent=new Intent(TimelineActivity.this,StartPage.class);
+                startActivity(intent);
+                break;
+            case "moreTweets":
+                updateTimeline= new AsyncTask<Void,Void,Void>()
+                {
+                    @Override
+                    protected void onPreExecute()
+                    {
+                        loadingBar.setVisibility(View.VISIBLE);
+                        super.onPreExecute();
+                    }
+
+                    @Override
+                    protected Void doInBackground(Void... params)
+                    {
+                        try
+                        {
+                            pageNumber++;
+                            tweetsPage.setPage(pageNumber);
+                            tweetsPage.setCount(20);
+                            List<twitter4j.Status> homeTimeline = tweetator.getHomeTimeline(tweetsPage);
+                            for(int i=0 ;i<homeTimeline.size();i++)
+                            {
+                                TweetStatus ts=new TweetStatus(homeTimeline.get(i));
+                                URL url = new URL(ts.profilePictureURL);
+                                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                                connection.setDoInput(true);
+                                connection.connect();
+                                InputStream input = connection.getInputStream();
+                                Bitmap myBitmap = BitmapFactory.decodeStream(input);
+                                ts.setProfilePicture(myBitmap);
+                                tweets.add(ts);
+                            }
+                        }
+                        catch (Exception exc)
+                        {
+                            Log.e(LOG_TAG,"Exception "+ exc);
+                        }
+                        return null;
+                    }
+
+                    @Override
+                    protected void onPostExecute(Void aVoid)
+                    {
+                        loadingBar.setVisibility(View.INVISIBLE);
+                        adapter=new TweetStatusAdapter(currentActivity,R.layout.onetweet_layout,tweets);
+                        tweetsListView.setAdapter(adapter);
+                        super.onPostExecute(aVoid);
+                    }
+                }.execute();
+                break;
             case "newTweet":
                             tweetToSend=newTweetEditText.getText().toString();
                             if(tweetToSend.length()>140)
@@ -304,7 +400,10 @@ public class TimelineActivity extends Activity implements View.OnClickListener
                                             {
                                                 try
                                                 {
-                                                    List<twitter4j.Status> homeTimeline = tweetator.getHomeTimeline();
+                                                    pageNumber=1;
+                                                    tweetsPage.setPage(1);
+                                                    tweetsPage.setCount(20);
+                                                    List<twitter4j.Status> homeTimeline = tweetator.getHomeTimeline(tweetsPage);
                                                     tweets=new ArrayList<TweetStatus>();
                                                     for(int i=0 ;i<homeTimeline.size();i++)
                                                     {

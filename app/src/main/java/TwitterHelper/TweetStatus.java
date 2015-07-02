@@ -15,7 +15,7 @@ public class TweetStatus
 {
     public int profilePictureId;
     boolean isRetweeted,isFavourited;
-    public long tweetID;
+    public long tweetID,currentUserRetweetId;
     Bitmap profilePicture;
     public String status,userName,time,profilePictureURL;
     public TweetStatus()
@@ -35,6 +35,7 @@ public class TweetStatus
             long createdAt=status.getCreatedAt().getTime();
             profilePictureURL=status.getUser().getProfileImageURL().toString();
             time=String.format(DateUtils.getRelativeTimeSpanString(createdAt)+" ");
+            currentUserRetweetId=status.getCurrentUserRetweetId();
         }
         catch (Exception exc){}
     }
