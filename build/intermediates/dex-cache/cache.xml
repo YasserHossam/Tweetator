@@ -16,18 +16,18 @@
         <dex dex="G:\Tweetator\app\build\intermediates\pre-dexed\debug\classes-07c12f1bb6b9aca293797e79e5b64cfa4979ae11.jar" />
     </item>
     <item
-        jar="C:\Users\ZAxss_000\AppData\Local\Android\sdk\extras\android\m2repository\com\android\support\support-annotations\22.1.1\support-annotations-22.1.1.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="01d051a6bfb1218b1db2d3a5af0480ac2c25c42a">
-        <dex dex="G:\Tweetator\app\build\intermediates\pre-dexed\debug\support-annotations-22.1.1-a022880de8e9b4a9dbac88a5ea04331c5fc26194.jar" />
-    </item>
-    <item
         jar="G:\Tweetator\app\build\intermediates\exploded-aar\com.android.support\support-v4\22.1.1\jars\classes.jar"
         jumboMode="false"
         revision="22.0.1"
         sha1="c95ba8152923e4872e86a82cfcba9a51c0214328">
         <dex dex="G:\Tweetator\app\build\intermediates\pre-dexed\debug\classes-91a490180a2a783da36b17536488ff4db690dfb1.jar" />
+    </item>
+    <item
+        jar="C:\Users\ZAxss_000\AppData\Local\Android\sdk\extras\android\m2repository\com\android\support\support-annotations\22.1.1\support-annotations-22.1.1.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="01d051a6bfb1218b1db2d3a5af0480ac2c25c42a">
+        <dex dex="G:\Tweetator\app\build\intermediates\pre-dexed\debug\support-annotations-22.1.1-a022880de8e9b4a9dbac88a5ea04331c5fc26194.jar" />
     </item>
     <item
         jar="G:\Tweetator\app\libs\twitter4j-core-4.0.3.jar"

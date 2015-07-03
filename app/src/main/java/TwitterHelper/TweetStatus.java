@@ -13,8 +13,8 @@ import twitter4j.Status;
 
 public class TweetStatus
 {
-    public int profilePictureId;
-    boolean isRetweeted,isFavourited;
+    public int profilePictureId,index;
+    public boolean isRetweeted,isFavourited;
     public long tweetID,currentUserRetweetId;
     Bitmap profilePicture;
     public String status,userName,time,profilePictureURL;
@@ -36,6 +36,22 @@ public class TweetStatus
             profilePictureURL=status.getUser().getProfileImageURL().toString();
             time=String.format(DateUtils.getRelativeTimeSpanString(createdAt)+" ");
             currentUserRetweetId=status.getCurrentUserRetweetId();
+        }
+        catch (Exception exc){}
+    }
+    public TweetStatus(TweetStatus status)
+    {
+        profilePictureId= R.drawable.ic_launcher;
+        try
+        {
+            isRetweeted=status.isRetweeted;
+            isFavourited=status.isFavourited;
+            tweetID=status.tweetID;
+            this.status=status.status;
+            userName=status.userName;
+            profilePictureURL=status.profilePictureURL;
+            time=status.time;
+            currentUserRetweetId=status.currentUserRetweetId;
         }
         catch (Exception exc){}
     }

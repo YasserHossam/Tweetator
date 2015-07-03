@@ -10,7 +10,8 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="0.30"
-        android:layout_gravity="top">
+        android:layout_gravity="top"
+        android:layout_marginBottom="5dp">
         <EditText
             android:id="@+id/newTweetEditText"
             android:layout_width="match_parent"
@@ -21,14 +22,25 @@
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight=".30">
+            android:layout_weight=".30"
+            android:background="#fffafafa">
             <Button
                 android:id="@+id/newTweetButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentRight="true"
                 android:text="Tweet"
-                />
+                android:background="#ff51aaf7" />
+            <ImageButton
+                android:id="@+id/refreshButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:scaleType="fitXY"
+                android:adjustViewBounds="true"
+                android:cropToPadding="false"
+                android:background="#ffeeeeee"
+                android:src="@drawable/refresh_page"/>
         </RelativeLayout>
 
     </LinearLayout>
@@ -40,7 +52,7 @@
             android:id="@+id/tweetsListView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="#ff45b5d4">
+            android:background="#ff15a3f7">
         </ListView>
         <ProgressBar
             android:id="@+id/loadingBar"
@@ -50,6 +62,12 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"/>
+        <LinearLayout
+            android:orientation="horizontal"
+            android:id="@+id/profileFragment"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"></LinearLayout>
     </RelativeLayout>
         <fragment
             android:name="com.yasser.tweetator.OptionMenuFragment"
@@ -58,5 +76,4 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center">
         </fragment>
-
 </LinearLayout>

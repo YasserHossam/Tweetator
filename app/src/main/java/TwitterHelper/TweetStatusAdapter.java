@@ -65,15 +65,18 @@ public class TweetStatusAdapter extends ArrayAdapter<TweetStatus>
             holder = (TweetStatusHolder)row.getTag();
         }
         TweetStatus tweetStatus = data.get(position);
-
         holder.profilePicture.setImageBitmap(tweetStatus.profilePicture);
         holder.status.setText(tweetStatus.status);
         holder.userName.setText(tweetStatus.userName);
         holder.time.setText(tweetStatus.time);
         if(tweetStatus.isFavourited)
             holder.favourite.setImageResource(R.drawable.favorite_on);
+        else
+            holder.favourite.setImageResource(R.drawable.favorite_hover);
         if(tweetStatus.isRetweeted)
             holder.retweet.setImageResource(R.drawable.retweet_on);
+        else
+            holder.retweet.setImageResource(R.drawable.retweet_hover);
         holder.favourite.setOnClickListener(tweetListener);
         holder.favourite.setTag("favourite%" + tweetStatus.tweetID + "%" + tweetStatus.isFavourited);
         holder.reply.setOnClickListener(tweetListener);
@@ -93,6 +96,8 @@ public class TweetStatusAdapter extends ArrayAdapter<TweetStatus>
         @Override
         public void onClick(View v)
         {
+            int tweetInAction=0;
+
             String[] tags;
             String userName=null;
             boolean isFavouritedOrRetweeted=false;
@@ -100,11 +105,18 @@ public class TweetStatusAdapter extends ArrayAdapter<TweetStatus>
             tags=((String)(v.getTag())).split("%");
             String buttonType=tags[0];
             long tweetID=Long.valueOf(tags[1]).longValue(),currentUserRetweetId=0;
+            for(int i=0;i<data.size();i++)
+            {
+                if(tweetID==data.get(i).tweetID) {
+                    tweetInAction = i;
+                    break;
+                }
+            }
             if(buttonType.equals("reply"))
             {
                 userName=tags[2];
             }
-            else
+            else if(buttonType.equals("favourite")||buttonType.equals("retweet"))
             {
                 isFavouritedOrRetweeted=Boolean.valueOf(tags[2]);
             }
@@ -113,11 +125,13 @@ public class TweetStatusAdapter extends ArrayAdapter<TweetStatus>
                 if(!isFavouritedOrRetweeted)
                 {
                     clickedButton.setImageResource(R.drawable.favorite_on);
+                    data.get(tweetInAction).isFavourited=true;
                     v.setTag("favourite%" + tweetID + "%" + true);
                 }
                 else
                 {
                     clickedButton.setImageResource(R.drawable.favorite_hover);
+                    data.get(tweetInAction).isFavourited=false;
                     v.setTag("favourite%" + tweetID + "%" + false);
                 }
             }
@@ -127,10 +141,13 @@ public class TweetStatusAdapter extends ArrayAdapter<TweetStatus>
                 if(!isFavouritedOrRetweeted)
                 {
                     clickedButton.setImageResource(R.drawable.retweet_on);
+                    data.get(tweetInAction).isRetweeted=true;
                     v.setTag("retweet%" + tweetID + "%" + true + "%"+currentUserRetweetId);
                 }
-                    else {
+                else
+                {
                     clickedButton.setImageResource(R.drawable.retweet_hover);
+                    data.get(tweetInAction).isRetweeted=false;
                     v.setTag("retweet%" + tweetID + "%" + false+"%"+currentUserRetweetId);
                 }
             }

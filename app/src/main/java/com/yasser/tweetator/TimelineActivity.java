@@ -3,6 +3,8 @@ package com.yasser.tweetator;
 import android.app.Activity;
 import android.app.Application;
 import android.app.Fragment;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -21,6 +23,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ExpandableListView;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
@@ -67,6 +70,7 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
     public final static String TWIT_URL = "oauth2://t4jsample";
     ListView tweetsListView;
     TweetStatusAdapter adapter;
+    TweetStatus tweetInAction;
     ArrayList<TweetStatus> tweets;
     ProgressBar loadingBar;
     AsyncTask updateTimeline;
@@ -82,17 +86,19 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
     boolean isFavouritedOrIsRetweeted;
     Paging tweetsPage;
     OptionMenuFragment menuFragment;
-    ImageButton signoutButton;
+    ImageButton signoutButton,refreshButton;
     int pageNumber;
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
-
         App app=new App();
         app.setContext(this);
         currentActivity=app.getContext();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.timeline_layout);
+        refreshButton=(ImageButton)findViewById(R.id.refreshButton);
+        refreshButton.setOnClickListener(this);
+        refreshButton.setTag("refreshTimeline");
         tweetsPage=new Paging();
         newTweetEditText=(EditText)findViewById(R.id.newTweetEditText);
         newTweetButton=(Button)findViewById(R.id.newTweetButton);
@@ -167,7 +173,7 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
                 loadingBar.setVisibility(View.INVISIBLE);
                 adapter=new TweetStatusAdapter(currentActivity,R.layout.onetweet_layout,tweets);
                 tweetsListView.setAdapter(adapter);
-               super.onPostExecute(aVoid);
+                super.onPostExecute(aVoid);
             }
         }.execute();
         /*
@@ -187,16 +193,26 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
     @Override
     protected void onNewIntent(Intent intent)
     {
+        tweetInAction=new TweetStatus();
         super.onNewIntent(intent);
         String buttonType=intent.getStringExtra("buttonType");
         userName=(String)intent.getStringExtra("userName");
         tweetID=(long)intent.getLongExtra("tweetID", 1);
         currentUserRetweetId=(long)intent.getLongExtra("curretUserRetweetId",0);
         isFavouritedOrIsRetweeted=intent.getBooleanExtra("isFavouritedOrIsRetweeted",false);
+        for(int i=0;i<tweets.size();i++)
+        {
+            if(tweetID==tweets.get(i).tweetID)
+            {
+                tweetInAction =tweets.get(i);
+                tweetInAction.index=i;
+            }
+        }
+
         switch (buttonType)
         {
             case "favourite":
-                new AsyncTask<Void,Void,Void>()
+                new AsyncTask<Void,Void,String>()
                 {
                     @Override
                     protected void onPreExecute()
@@ -205,32 +221,54 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
                         super.onPreExecute();
                     }
                     @Override
-                    protected Void doInBackground(Void... params)
+                    protected String doInBackground(Void... params)
                     {
+                        String actionType="";
                         try
                         {
                             if(!isFavouritedOrIsRetweeted)
                             {
+                                actionType="favourite";
                                 twitter4j.Status status = tweetator.createFavorite(tweetID);
+                                actionType+="&done";
                             }
                             else
                             {
+                                actionType="unFavourite";
                                 twitter4j.Status status = tweetator.destroyFavorite(tweetID);
+                                actionType+="&done";
                             }
                         }
                         catch (TwitterException exc)
                         {
-
+                            actionType+="&failed";
                         }
-                        return null;
+                        return actionType;
                     }
 
                     @Override
-                    protected void onPostExecute(Void aVoid)
-                    {
+                    protected void onPostExecute(String result)
+                    {String[]state=result.split("&");
                         loadingBar.setVisibility(View.INVISIBLE);
-                        Toast.makeText(currentActivity, "Done", Toast.LENGTH_SHORT).show();
-                        super.onPostExecute(aVoid);
+                        if(state[1].equals("failed"))
+                        {
+                            if (state[0].equals("unFavourite"))
+                            {
+                                Toast.makeText(currentActivity, "Can't do Action now, Please Try Again Later", Toast.LENGTH_SHORT).show();
+                                tweetInAction.isFavourited = true;
+                            } else if (state[0].equals("favourite"))
+                            {
+                                Toast.makeText(currentActivity, "Can't do Action now, Please Try Again Later", Toast.LENGTH_SHORT).show();
+                                tweetInAction.isFavourited = false;
+                            }
+                            tweets.set(tweetInAction.index,tweetInAction);
+                            adapter.notifyDataSetChanged();
+                        }
+                        else
+                        {
+                            Toast.makeText(currentActivity, "Done", Toast.LENGTH_SHORT).show();
+                        }
+                        super.onPostExecute(result);
                     }
                 }.execute();
                 break;
@@ -243,43 +281,67 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
                 }
                 break;
             case "retweet"  :
-                new AsyncTask<Void,Void,Void>()
+
+            new AsyncTask<Void,Void,String>()
+            {
+                @Override
+                protected void onPreExecute()
                 {
-                    @Override
-                    protected void onPreExecute()
+                    loadingBar.setVisibility(View.VISIBLE);
+                    super.onPreExecute();
+                }
+                @Override
+                protected String doInBackground(Void... params)
+                {
+                    String actionType=null;
+                    try
                     {
-                        loadingBar.setVisibility(View.VISIBLE);
-                        super.onPreExecute();
-                    }
-                    @Override
-                    protected Void doInBackground(Void... params)
-                    {
-                        try
+                        if(!isFavouritedOrIsRetweeted)
                         {
-                            if(!isFavouritedOrIsRetweeted)
-                            {
-                                tweetator.retweetStatus(tweetID);
-                            }
-                            else
-                            {
-                               tweetator.destroyStatus(currentUserRetweetId);
-                            }
+                            actionType="retweet";
+                            twitter4j.Status s=tweetator.retweetStatus(tweetID);
+                            actionType+="&done";
                         }
-                        catch (TwitterException exc)
+                        else
                         {
-
+                            actionType="unRetweet";
+                            tweetator.destroyStatus(currentUserRetweetId);
+                            actionType+="&done";
                         }
-                        return null;
                     }
-
-                    @Override
-                    protected void onPostExecute(Void aVoid)
+                    catch (TwitterException exc)
                     {
-                        loadingBar.setVisibility(View.INVISIBLE);
-                        Toast.makeText(currentActivity,"Done",Toast.LENGTH_SHORT).show();
-                        super.onPostExecute(aVoid);
+                        actionType+="&failed";
                     }
-                }.execute();
+                    return actionType;
+                }
+
+                @Override
+                protected void onPostExecute(String result)
+                {
+                    String[]state=result.split("&");
+                    loadingBar.setVisibility(View.INVISIBLE);
+                    if(state[1].equals("failed"))
+                    {
+                        if (state[0].equals("unRetweet"))
+                        {
+                            Toast.makeText(currentActivity, "Can't do Action now, Please Try Again Later", Toast.LENGTH_SHORT).show();
+                            tweetInAction.isRetweeted = true;
+                        } else if (state[0].equals("retweet"))
+                        {
+                            Toast.makeText(currentActivity, "Can't do Action now, Please Try Again Later", Toast.LENGTH_SHORT).show();
+                            tweetInAction.isRetweeted = false;
+                        }
+                        tweets.set(tweetInAction.index,tweetInAction);
+                        adapter.notifyDataSetChanged();
+                    }
+                    else
+                    {
+                        Toast.makeText(currentActivity, "Done", Toast.LENGTH_SHORT).show();
+                    }
+                    super.onPostExecute(result);
+                }
+            }.execute();
                 break;
         }
     }
@@ -300,6 +362,66 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
         String s=v.getTag().toString();
         switch (s)
         {
+            case "refreshTimeline":
+                updateTimeline= new AsyncTask<Void,Void,Void>()
+                {
+                    @Override
+                    protected void onPreExecute()
+                    {
+                        loadingBar.setVisibility(View.VISIBLE);
+                        super.onPreExecute();
+                    }
+
+                    @Override
+                    protected Void doInBackground(Void... params)
+                    {
+                        try
+                        {
+                            Paging refreshPage=new Paging();
+                            refreshPage.setSinceId(tweets.get(0).tweetID);
+                            List<twitter4j.Status> homeTimeline = tweetator.getHomeTimeline(refreshPage);
+                            for(int i=0 ;i<homeTimeline.size();i++)
+                            {
+                                TweetStatus ts=new TweetStatus(homeTimeline.get(i));
+                                URL url = new URL(ts.profilePictureURL);
+                                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                                connection.setDoInput(true);
+                                connection.connect();
+                                InputStream input = connection.getInputStream();
+                                Bitmap myBitmap = BitmapFactory.decodeStream(input);
+                                ts.setProfilePicture(myBitmap);
+                                boolean isDuplicated=false;
+                                for(int k=0;k<tweets.size();k++)
+                                {
+                                    if(tweets.get(k).tweetID==ts.tweetID)
+                                        isDuplicated=true;
+                                }
+                                if(!isDuplicated)
+                                tweets.add(i,ts);
+                            }
+                        }
+                        catch (Exception exc)
+                        {
+                            Log.e(LOG_TAG,"Exception "+ exc);
+                        }
+                        return null;
+                    }
+
+                    @Override
+                    protected void onPostExecute(Void aVoid)
+                    {
+                        loadingBar.setVisibility(View.INVISIBLE);
+                        adapter.notifyDataSetChanged();
+                        super.onPostExecute(aVoid);
+                    }
+                }.execute();
+                /*FragmentManager fragmentManager = getFragmentManager();
+                FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+               fragmentTransaction.setCustomAnimations(R.anim.animation_fade_in, R.anim.animation_fade_out);
+                ProfileFragment hello = new ProfileFragment();
+                fragmentTransaction.replace(R.id.profileFragment, hello, "HELLO");
+                fragmentTransaction.commit();*/
+                break;
             case "signout":
                 tweetatorPrefs.edit().clear().commit();
                 Intent intent=new Intent(TimelineActivity.this,StartPage.class);
@@ -348,8 +470,7 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
                     protected void onPostExecute(Void aVoid)
                     {
                         loadingBar.setVisibility(View.INVISIBLE);
-                        adapter=new TweetStatusAdapter(currentActivity,R.layout.onetweet_layout,tweets);
-                        tweetsListView.setAdapter(adapter);
+                        adapter.notifyDataSetChanged();
                         super.onPostExecute(aVoid);
                     }
                 }.execute();
@@ -400,11 +521,8 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
                                             {
                                                 try
                                                 {
-                                                    pageNumber=1;
-                                                    tweetsPage.setPage(1);
-                                                    tweetsPage.setCount(20);
+                                                    tweetsPage.setCount(1);
                                                     List<twitter4j.Status> homeTimeline = tweetator.getHomeTimeline(tweetsPage);
-                                                    tweets=new ArrayList<TweetStatus>();
                                                     for(int i=0 ;i<homeTimeline.size();i++)
                                                     {
                                                         TweetStatus ts=new TweetStatus(homeTimeline.get(i));
@@ -415,8 +533,9 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
                                                         InputStream input = connection.getInputStream();
                                                         Bitmap myBitmap = BitmapFactory.decodeStream(input);
                                                         ts.setProfilePicture(myBitmap);
-                                                        tweets.add(ts);
+                                                        tweets.add(0, ts);
                                                     }
+
                                                 }
                                                 catch (Exception exc)
                                                 {
@@ -432,9 +551,7 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
                                                 loadingBar.setVisibility(View.INVISIBLE);
                                                 Toast.makeText(getApplicationContext(), "Tweet is sent Successfully", Toast.LENGTH_SHORT).show();
                                                 newTweetEditText.setText("");
-                                                adapter = new TweetStatusAdapter(currentActivity,R.layout.onetweet_layout,tweets);
                                                 adapter.notifyDataSetChanged();
-                                                tweetsListView.setAdapter(adapter);
                                                 super.onPostExecute(aVoid);
                                             }
                                         }.execute();
