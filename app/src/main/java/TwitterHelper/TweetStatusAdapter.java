@@ -12,6 +12,8 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+
+import com.google.gson.Gson;
 import com.yasser.tweetator.R;
 import com.yasser.tweetator.TimelineActivity;
 
@@ -65,7 +67,9 @@ public class TweetStatusAdapter extends ArrayAdapter<TweetStatus>
             holder = (TweetStatusHolder)row.getTag();
         }
         TweetStatus tweetStatus = data.get(position);
-        holder.profilePicture.setImageBitmap(tweetStatus.profilePicture);
+        holder.profilePicture.setImageBitmap(tweetStatus.getProfilePicture());
+        holder.profilePicture.setTag(tweetStatus);
+        holder.profilePicture.setOnClickListener(this.profilePictureListener);
         holder.status.setText(tweetStatus.status);
         holder.userName.setText(tweetStatus.userName);
         holder.time.setText(tweetStatus.time);
@@ -91,6 +95,18 @@ public class TweetStatusAdapter extends ArrayAdapter<TweetStatus>
         TextView status,userName,time;
         ImageButton favourite,reply,retweet;
     }
+    private View.OnClickListener profilePictureListener=new View.OnClickListener()
+    {
+        @Override
+        public void onClick(View v)
+        {
+            Intent intent=new Intent(v.getContext(),TimelineActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            TweetStatus profileClicked=(TweetStatus)v.getTag();
+            intent.putExtra("profileClicked",profileClicked);
+            v.getContext().startActivity(intent);
+        }
+    };
     private View.OnClickListener tweetListener= new View.OnClickListener()
     {
         @Override

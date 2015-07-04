@@ -27,7 +27,10 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import org.w3c.dom.Text;
 
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -39,12 +42,14 @@ import java.util.List;
 import TwitterHelper.App;
 import TwitterHelper.TweetStatus;
 import TwitterHelper.TweetStatusAdapter;
+import TwitterHelper.UserInfo;
 import twitter4j.AccountSettings;
 import twitter4j.Paging;
 import twitter4j.Twitter;
 import twitter4j.Status;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
+import twitter4j.User;
 import twitter4j.auth.RequestToken;
 import twitter4j.conf.Configuration;
 import twitter4j.conf.ConfigurationBuilder;
@@ -70,7 +75,7 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
     public final static String TWIT_URL = "oauth2://t4jsample";
     ListView tweetsListView;
     TweetStatusAdapter adapter;
-    TweetStatus tweetInAction;
+    TweetStatus tweetInAction,profileClicked;
     ArrayList<TweetStatus> tweets;
     ProgressBar loadingBar;
     AsyncTask updateTimeline;
@@ -88,6 +93,7 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
     OptionMenuFragment menuFragment;
     ImageButton signoutButton,refreshButton;
     int pageNumber;
+    User clickedUser;
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
@@ -107,11 +113,11 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
         loadingBar=(ProgressBar)findViewById(R.id.loadingBar);
         tweetsListView=(ListView)findViewById(R.id.tweetsListView);
         View footerView = ((LayoutInflater) currentActivity.getSystemService(Context.LAYOUT_INFLATER_SERVICE)).inflate(R.layout.timeline_listview_footer, null, false);
-        menuFragment=(OptionMenuFragment)getFragmentManager().findFragmentById(R.id.menuFragment);
+       /* menuFragment=(OptionMenuFragment)getFragmentManager().findFragmentById(R.id.menuFragment);
         View optionMenuFragment=menuFragment.getView();
         signoutButton=(ImageButton)optionMenuFragment.findViewById(R.id.signoutButton);
         signoutButton.setOnClickListener(this);
-        signoutButton.setTag("signout");
+        signoutButton.setTag("signout");*/
         moreTweets=(Button)footerView.findViewById(R.id.moreTweets);
         moreTweets.setTag("moreTweets");
         moreTweets.setOnClickListener(this);
@@ -193,167 +199,237 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
     @Override
     protected void onNewIntent(Intent intent)
     {
-        tweetInAction=new TweetStatus();
-        super.onNewIntent(intent);
-        String buttonType=intent.getStringExtra("buttonType");
-        userName=(String)intent.getStringExtra("userName");
-        tweetID=(long)intent.getLongExtra("tweetID", 1);
-        currentUserRetweetId=(long)intent.getLongExtra("curretUserRetweetId",0);
-        isFavouritedOrIsRetweeted=intent.getBooleanExtra("isFavouritedOrIsRetweeted",false);
-        for(int i=0;i<tweets.size();i++)
+        if(intent.hasExtra("buttonType"))
         {
-            if(tweetID==tweets.get(i).tweetID)
-            {
-                tweetInAction =tweets.get(i);
-                tweetInAction.index=i;
+            tweetInAction = new TweetStatus();
+            super.onNewIntent(intent);
+            String buttonType = intent.getStringExtra("buttonType");
+            userName = (String) intent.getStringExtra("userName");
+            tweetID = (long) intent.getLongExtra("tweetID", 1);
+            currentUserRetweetId = (long) intent.getLongExtra("curretUserRetweetId", 0);
+            isFavouritedOrIsRetweeted = intent.getBooleanExtra("isFavouritedOrIsRetweeted", false);
+            for (int i = 0; i < tweets.size(); i++) {
+                if (tweetID == tweets.get(i).tweetID) {
+                    tweetInAction = tweets.get(i);
+                    tweetInAction.index = i;
+                }
+            }
+
+            switch (buttonType) {
+                case "favourite":
+                    new AsyncTask<Void, Void, String>() {
+                        @Override
+                        protected void onPreExecute() {
+                            loadingBar.setVisibility(View.VISIBLE);
+                            super.onPreExecute();
+                        }
+
+                        @Override
+                        protected String doInBackground(Void... params) {
+                            String actionType = "";
+                            try {
+                                if (!isFavouritedOrIsRetweeted) {
+                                    actionType = "favourite";
+                                    twitter4j.Status status = tweetator.createFavorite(tweetID);
+                                    actionType += "&done";
+                                } else {
+                                    actionType = "unFavourite";
+                                    twitter4j.Status status = tweetator.destroyFavorite(tweetID);
+                                    actionType += "&done";
+                                }
+                            } catch (TwitterException exc) {
+                                actionType += "&failed";
+                            }
+                            return actionType;
+                        }
+
+                        @Override
+                        protected void onPostExecute(String result) {
+                            String[] state = result.split("&");
+                            loadingBar.setVisibility(View.INVISIBLE);
+                            if (state[1].equals("failed")) {
+                                if (state[0].equals("unFavourite")) {
+                                    Toast.makeText(currentActivity, "Can't do Action now, Please Try Again Later", Toast.LENGTH_SHORT).show();
+                                    tweetInAction.isFavourited = true;
+                                } else if (state[0].equals("favourite")) {
+                                    Toast.makeText(currentActivity, "Can't do Action now, Please Try Again Later", Toast.LENGTH_SHORT).show();
+                                    tweetInAction.isFavourited = false;
+                                }
+                                tweets.set(tweetInAction.index, tweetInAction);
+                                adapter.notifyDataSetChanged();
+                            } else {
+                                Toast.makeText(currentActivity, "Done", Toast.LENGTH_SHORT).show();
+                            }
+                            super.onPostExecute(result);
+                        }
+                    }.execute();
+                    break;
+                case "reply":
+                    newTweetEditText.setText("@" + userName);
+                    newTweetEditText.clearFocus();
+                    if (newTweetEditText.requestFocus()) {
+                        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+                    }
+                    break;
+                case "retweet":
+
+                    new AsyncTask<Void, Void, String>() {
+                        @Override
+                        protected void onPreExecute() {
+                            loadingBar.setVisibility(View.VISIBLE);
+                            super.onPreExecute();
+                        }
+
+                        @Override
+                        protected String doInBackground(Void... params) {
+                            String actionType = null;
+                            try {
+                                if (!isFavouritedOrIsRetweeted) {
+                                    actionType = "retweet";
+                                    twitter4j.Status s = tweetator.retweetStatus(tweetID);
+                                    actionType += "&done";
+                                } else {
+                                    actionType = "unRetweet";
+                                    tweetator.destroyStatus(currentUserRetweetId);
+                                    actionType += "&done";
+                                }
+                            } catch (TwitterException exc) {
+                                actionType += "&failed";
+                            }
+                            return actionType;
+                        }
+
+                        @Override
+                        protected void onPostExecute(String result) {
+                            String[] state = result.split("&");
+                            loadingBar.setVisibility(View.INVISIBLE);
+                            if (state[1].equals("failed")) {
+                                if (state[0].equals("unRetweet")) {
+                                    Toast.makeText(currentActivity, "Can't do Action now, Please Try Again Later", Toast.LENGTH_SHORT).show();
+                                    tweetInAction.isRetweeted = true;
+                                } else if (state[0].equals("retweet")) {
+                                    Toast.makeText(currentActivity, "Can't do Action now, Please Try Again Later", Toast.LENGTH_SHORT).show();
+                                    tweetInAction.isRetweeted = false;
+                                }
+                                tweets.set(tweetInAction.index, tweetInAction);
+                                adapter.notifyDataSetChanged();
+                            } else {
+                                Toast.makeText(currentActivity, "Done", Toast.LENGTH_SHORT).show();
+                            }
+                            super.onPostExecute(result);
+                        }
+                    }.execute();
+                    break;
             }
         }
-
-        switch (buttonType)
+        else if(intent.hasExtra("profileClicked"))
         {
-            case "favourite":
-                new AsyncTask<Void,Void,String>()
-                {
-                    @Override
-                    protected void onPreExecute()
-                    {
-                        loadingBar.setVisibility(View.VISIBLE);
-                        super.onPreExecute();
-                    }
-                    @Override
-                    protected String doInBackground(Void... params)
-                    {
-                        String actionType="";
-                        try
-                        {
-                            if(!isFavouritedOrIsRetweeted)
-                            {
-                                actionType="favourite";
-                                twitter4j.Status status = tweetator.createFavorite(tweetID);
-                                actionType+="&done";
-                            }
-                            else
-                            {
-                                actionType="unFavourite";
-                                twitter4j.Status status = tweetator.destroyFavorite(tweetID);
-                                actionType+="&done";
-                            }
-                        }
-                        catch (TwitterException exc)
-                        {
-                            actionType+="&failed";
-                        }
-                        return actionType;
-                    }
-
-                    @Override
-                    protected void onPostExecute(String result)
-                    {String[]state=result.split("&");
-                        loadingBar.setVisibility(View.INVISIBLE);
-                        if(state[1].equals("failed"))
-                        {
-                            if (state[0].equals("unFavourite"))
-                            {
-                                Toast.makeText(currentActivity, "Can't do Action now, Please Try Again Later", Toast.LENGTH_SHORT).show();
-                                tweetInAction.isFavourited = true;
-                            } else if (state[0].equals("favourite"))
-                            {
-                                Toast.makeText(currentActivity, "Can't do Action now, Please Try Again Later", Toast.LENGTH_SHORT).show();
-                                tweetInAction.isFavourited = false;
-                            }
-                            tweets.set(tweetInAction.index,tweetInAction);
-                            adapter.notifyDataSetChanged();
-                        }
-                        else
-                        {
-                            Toast.makeText(currentActivity, "Done", Toast.LENGTH_SHORT).show();
-                        }
-                        super.onPostExecute(result);
-                    }
-                }.execute();
-                break;
-            case "reply"    :
-                newTweetEditText.setText("@"+userName);
-                newTweetEditText.clearFocus();
-                if(newTweetEditText.requestFocus())
-                {
-                    getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
-                }
-                break;
-            case "retweet"  :
-
-            new AsyncTask<Void,Void,String>()
+            profileClicked=(TweetStatus)intent.getParcelableExtra("profileClicked");
+            new AsyncTask<Void,Void, UserInfo>()
             {
                 @Override
                 protected void onPreExecute()
                 {
-                    loadingBar.setVisibility(View.VISIBLE);
                     super.onPreExecute();
-                }
-                @Override
-                protected String doInBackground(Void... params)
-                {
-                    String actionType=null;
-                    try
-                    {
-                        if(!isFavouritedOrIsRetweeted)
-                        {
-                            actionType="retweet";
-                            twitter4j.Status s=tweetator.retweetStatus(tweetID);
-                            actionType+="&done";
-                        }
-                        else
-                        {
-                            actionType="unRetweet";
-                            tweetator.destroyStatus(currentUserRetweetId);
-                            actionType+="&done";
-                        }
-                    }
-                    catch (TwitterException exc)
-                    {
-                        actionType+="&failed";
-                    }
-                    return actionType;
+                    loadingBar.setVisibility(View.VISIBLE);
+
                 }
 
                 @Override
-                protected void onPostExecute(String result)
+                protected UserInfo doInBackground(Void... params)
                 {
-                    String[]state=result.split("&");
-                    loadingBar.setVisibility(View.INVISIBLE);
-                    if(state[1].equals("failed"))
+                    UserInfo currentUserInfo=new UserInfo();
+                    String errorType="getUserError";
+                    try
                     {
-                        if (state[0].equals("unRetweet"))
+                        clickedUser=tweetator.showUser(profileClicked.userName);
+                        errorType="getProfilePictureError";
+                        currentUserInfo=new UserInfo(clickedUser);
+                        URL url = new URL(clickedUser.getProfileImageURL());
+                        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                        connection.setDoInput(true);
+                        connection.connect();
+                        InputStream input = connection.getInputStream();
+                        Bitmap myBitmap = BitmapFactory.decodeStream(input);
+                        currentUserInfo.setProfilePicture(myBitmap);
+                        errorType="getHeaderError";
+                        url = new URL(clickedUser.getProfileBannerMobileURL());
+                        connection = (HttpURLConnection) url.openConnection();
+                        connection.setDoInput(true);
+                        connection.connect();
+                        input = connection.getInputStream();
+                        myBitmap = BitmapFactory.decodeStream(input);
+                        currentUserInfo.setHeader(myBitmap);
+                    }
+                    catch (Exception exc)
+                    {
+                        switch (errorType)
                         {
-                            Toast.makeText(currentActivity, "Can't do Action now, Please Try Again Later", Toast.LENGTH_SHORT).show();
-                            tweetInAction.isRetweeted = true;
-                        } else if (state[0].equals("retweet"))
-                        {
-                            Toast.makeText(currentActivity, "Can't do Action now, Please Try Again Later", Toast.LENGTH_SHORT).show();
-                            tweetInAction.isRetweeted = false;
+
+                            case "getProfilePictureError":
+                                try
+                                {
+                                    currentUserInfo.setProfilePicture(BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.default_profile_picture));
+                                }
+                                catch (Exception ex)
+                                {
+
+                                }
+                                break;
+                            case "getHeaderError":
+                                try
+                                {
+                                    currentUserInfo.setHeader(BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.default_header));
+                                }
+                                catch (Exception e)
+                                {
+
+                                }
+                                break;
                         }
-                        tweets.set(tweetInAction.index,tweetInAction);
-                        adapter.notifyDataSetChanged();
                     }
-                    else
-                    {
-                        Toast.makeText(currentActivity, "Done", Toast.LENGTH_SHORT).show();
-                    }
-                    super.onPostExecute(result);
+                    return currentUserInfo;
                 }
+                @Override
+                protected void onPostExecute(UserInfo ui)
+                {
+                    super.onPostExecute(ui);
+                    FragmentManager fragmentManager = getFragmentManager();
+                    FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+                    fragmentTransaction.setCustomAnimations(R.anim.animation_fade_in, R.anim.animation_fade_out);
+                    ProfileFragment hello = new ProfileFragment();
+                    Bundle bundle=new Bundle();
+                    bundle.putParcelable("userInfo",ui);
+                    hello.setArguments(bundle);
+                    fragmentTransaction.add(R.id.profileFragmentContainer, hello, "HELLO");
+                    fragmentTransaction.addToBackStack("HELLO");
+                    fragmentTransaction.commit();
+                    loadingBar.setVisibility(View.INVISIBLE);
+                }
+
             }.execute();
-                break;
+
         }
     }
 
     @Override
     public void onBackPressed()
     {
-        super.onBackPressed();
-        Intent intent2 = new Intent(Intent.ACTION_MAIN);
-        intent2.addCategory(Intent.CATEGORY_HOME);
-        intent2.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(intent2);
+       //super.onBackPressed();
+        if(getFragmentManager().getBackStackEntryCount()>0)
+        {
+            FragmentManager.BackStackEntry backEntry=getFragmentManager().getBackStackEntryAt(getFragmentManager().getBackStackEntryCount()-1);
+            String str=backEntry.getName();
+            Fragment fragment=getFragmentManager().findFragmentByTag(str);
+            getFragmentManager().beginTransaction().remove( fragment).commit();
+        }
+        else
+        {
+            Intent intent2 = new Intent(Intent.ACTION_MAIN);
+            intent2.addCategory(Intent.CATEGORY_HOME);
+            intent2.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent2);
+        }
     }
 
     @Override

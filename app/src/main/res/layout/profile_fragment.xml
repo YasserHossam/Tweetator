@@ -24,6 +24,7 @@
         android:layout_height="0dp"
         android:layout_weight=".30">
         <ImageView
+            android:id="@+id/headerImageView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:scaleType="fitXY"
@@ -37,12 +38,12 @@
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_marginTop="5sp">
             <LinearLayout
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight=".25">
+                android:layout_height="match_parent"
+                android:layout_weight=".20">
                 <ImageView
                     android:id="@+id/profiePictureImageView"
                     android:layout_width="match_parent"
@@ -62,7 +63,7 @@
                     android:id="@+id/tweetsTextView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="20sp"
+                    android:textSize="15sp"
                     android:text="Tweets"
                     />
                 <TextView
@@ -85,7 +86,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Following"
-                    android:textSize="20sp"
+                    android:textSize="15sp"
                     />
                 <TextView
                     android:id="@+id/followingNumberTextView"
@@ -107,7 +108,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Followers"
-                    android:textSize="20sp"/>
+                    android:textSize="15sp"/>
                 <TextView
                     android:id="@+id/followersNumberTextView"
                     android:layout_width="wrap_content"
@@ -128,7 +129,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="name"
-            android:textSize="20sp"/>
+            android:textSize="16sp"/>
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="match_parent"
@@ -138,15 +139,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Twitter name"
-                android:textSize="20sp"/>
-            <TextView
-                android:id="@+id/stateTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="20sp"
-                android:text="state"
-                android:textSize="15sp"
-                android:background="#ffa3a0a7" />
+                android:textSize="13sp"/>
+
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>

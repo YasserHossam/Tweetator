@@ -64,16 +64,16 @@
             android:layout_centerInParent="true"/>
         <LinearLayout
             android:orientation="horizontal"
-            android:id="@+id/profileFragment"
-            android:layout_width="wrap_content"
+            android:id="@+id/profileFragmentContainer"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"></LinearLayout>
     </RelativeLayout>
-        <fragment
+        <!--<fragment
             android:name="com.yasser.tweetator.OptionMenuFragment"
             android:id="@+id/menuFragment"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center">
-        </fragment>
+        </fragment>-->
 </LinearLayout>
