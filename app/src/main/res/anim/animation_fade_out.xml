@@ -5,5 +5,5 @@
         android:valueFrom="1"
         android:valueTo="0"
         android:propertyName="alpha"
-        android:duration="1000" />
+        android:duration="750" />
 </set>

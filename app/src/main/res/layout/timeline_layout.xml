@@ -45,12 +45,13 @@
 
     </LinearLayout>
     <RelativeLayout
+        android:id="@+id/listViewLayout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight=".70">
         <ListView
             android:id="@+id/tweetsListView"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="#ff15a3f7">
         </ListView>
@@ -66,7 +67,7 @@
             android:orientation="horizontal"
             android:id="@+id/profileFragmentContainer"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_centerInParent="true"></LinearLayout>
     </RelativeLayout>
         <!--<fragment

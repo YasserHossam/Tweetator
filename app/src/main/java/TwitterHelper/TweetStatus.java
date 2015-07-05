@@ -21,7 +21,7 @@ public class TweetStatus implements Parcelable
     public int profilePictureId,index;
     public boolean isRetweeted,isFavourited;
     public long tweetID,currentUserRetweetId;
-    byte[] profilePicture;
+    byte[] profilePicture,biggerProfilePicture;
     public String status,userName,time,profilePictureURL;
     public TweetStatus()
     {

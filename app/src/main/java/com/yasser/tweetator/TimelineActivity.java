@@ -19,6 +19,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ExpandableListView;
@@ -45,6 +46,7 @@ import TwitterHelper.TweetStatusAdapter;
 import TwitterHelper.UserInfo;
 import twitter4j.AccountSettings;
 import twitter4j.Paging;
+import twitter4j.StatusUpdate;
 import twitter4j.Twitter;
 import twitter4j.Status;
 import twitter4j.TwitterException;
@@ -94,10 +96,12 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
     ImageButton signoutButton,refreshButton;
     int pageNumber;
     User clickedUser;
+    String tweetOrReply;
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         App app=new App();
+        tweetOrReply="tweet";
         app.setContext(this);
         currentActivity=app.getContext();
         super.onCreate(savedInstanceState);
@@ -107,6 +111,7 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
         refreshButton.setTag("refreshTimeline");
         tweetsPage=new Paging();
         newTweetEditText=(EditText)findViewById(R.id.newTweetEditText);
+
         newTweetButton=(Button)findViewById(R.id.newTweetButton);
         newTweetButton.setOnClickListener(this);
         newTweetButton.setTag("newTweet");
@@ -265,11 +270,12 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
                     }.execute();
                     break;
                 case "reply":
-                    newTweetEditText.setText("@" + userName);
-                    newTweetEditText.clearFocus();
-                    if (newTweetEditText.requestFocus()) {
-                        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
-                    }
+                    tweetOrReply="reply";
+                    String reply="@"+userName+" ";
+                    newTweetEditText.setText(reply);
+                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                    imm.showSoftInput(newTweetEditText, InputMethodManager.SHOW_IMPLICIT);
+                    newTweetEditText.setSelection(reply.length());
                     break;
                 case "retweet":
 
@@ -287,10 +293,34 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
                                 if (!isFavouritedOrIsRetweeted) {
                                     actionType = "retweet";
                                     twitter4j.Status s = tweetator.retweetStatus(tweetID);
+                                    s=tweetator.showStatus(tweetID);
+                                    TweetStatus ts=new TweetStatus(s);
+                                    for(int i=0;i<tweets.size();i++)
+                                    {
+                                        if(tweets.get(i).tweetID==tweetID)
+                                        {
+                                            ts=tweets.get(i);
+                                            ts.isRetweeted=s.isRetweeted();
+                                            ts.currentUserRetweetId=s.getCurrentUserRetweetId();
+                                            tweets.set(i,ts);
+                                        }
+                                    }
                                     actionType += "&done";
                                 } else {
                                     actionType = "unRetweet";
                                     tweetator.destroyStatus(currentUserRetweetId);
+                                    twitter4j.Status s=tweetator.showStatus(tweetID);
+                                    TweetStatus ts=new TweetStatus(s);
+                                    for(int i=0;i<tweets.size();i++)
+                                    {
+                                        if(tweets.get(i).tweetID==tweetID)
+                                        {
+                                            ts=tweets.get(i);
+                                            ts.isRetweeted=s.isRetweeted();
+                                            ts.currentUserRetweetId=s.getCurrentUserRetweetId();
+                                            tweets.set(i,ts);
+                                        }
+                                    }
                                     actionType += "&done";
                                 }
                             } catch (TwitterException exc) {
@@ -315,6 +345,7 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
                                 adapter.notifyDataSetChanged();
                             } else {
                                 Toast.makeText(currentActivity, "Done", Toast.LENGTH_SHORT).show();
+                                adapter.notifyDataSetChanged();
                             }
                             super.onPostExecute(result);
                         }
@@ -345,7 +376,7 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
                         clickedUser=tweetator.showUser(profileClicked.userName);
                         errorType="getProfilePictureError";
                         currentUserInfo=new UserInfo(clickedUser);
-                        URL url = new URL(clickedUser.getProfileImageURL());
+                        URL url = new URL(clickedUser.getOriginalProfileImageURL());
                         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                         connection.setDoInput(true);
                         connection.connect();
@@ -396,12 +427,12 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
                     super.onPostExecute(ui);
                     FragmentManager fragmentManager = getFragmentManager();
                     FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-                    fragmentTransaction.setCustomAnimations(R.anim.animation_fade_in, R.anim.animation_fade_out);
+                    fragmentTransaction.setCustomAnimations(R.anim.animation_slide_in_top, R.anim.animation_slide_out_bottom,R.anim.animation_slide_in_left,R.anim.animation_slide_out_right);
                     ProfileFragment hello = new ProfileFragment();
                     Bundle bundle=new Bundle();
                     bundle.putParcelable("userInfo",ui);
                     hello.setArguments(bundle);
-                    fragmentTransaction.add(R.id.profileFragmentContainer, hello, "HELLO");
+                    fragmentTransaction.add(R.id.listViewLayout, hello, "HELLO");
                     fragmentTransaction.addToBackStack("HELLO");
                     fragmentTransaction.commit();
                     loadingBar.setVisibility(View.INVISIBLE);
@@ -418,10 +449,7 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
        //super.onBackPressed();
         if(getFragmentManager().getBackStackEntryCount()>0)
         {
-            FragmentManager.BackStackEntry backEntry=getFragmentManager().getBackStackEntryAt(getFragmentManager().getBackStackEntryCount()-1);
-            String str=backEntry.getName();
-            Fragment fragment=getFragmentManager().findFragmentByTag(str);
-            getFragmentManager().beginTransaction().remove( fragment).commit();
+            ExitProifle();
         }
         else
         {
@@ -431,10 +459,17 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
             startActivity(intent2);
         }
     }
-
+    public void ExitProifle()
+    {
+        getFragmentManager().popBackStack();
+    }
     @Override
     public void onClick(View v)
     {
+        if(getFragmentManager().getBackStackEntryCount()>0)
+        {
+            ExitProifle();
+        }
         String s=v.getTag().toString();
         switch (s)
         {
@@ -571,7 +606,13 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
                                     {
                                         try
                                         {
-                                            tweetator.updateStatus(tweetToSend);
+                                            if(tweetOrReply.equals("tweet")) {
+                                                tweetator.updateStatus(tweetToSend);
+                                            }
+                                            else
+                                            {
+                                                tweetator.updateStatus(new StatusUpdate(tweetToSend).inReplyToStatusId(tweetID));
+                                            }
                                         } catch (TwitterException e)
                                         {
                                             Log.e(LOG_TAG, "TE " + e.getMessage());
