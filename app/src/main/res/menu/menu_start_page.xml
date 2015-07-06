@@ -1,6 +1,13 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools" tools:context=".StartPage">
-    <item android:id="@+id/action_settings" android:title="@string/action_settings"
-        android:orderInCategory="100" app:showAsAction="never" />
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context=".StartPage">
+   <item
+       android:id="@+id/refreshButton"
+       android:title="refrestButton"
+       app:showAsAction="always"
+       android:icon="@drawable/refresh_page"
+       android:background="#ff51aaf7"></item>
+
+
 </menu>

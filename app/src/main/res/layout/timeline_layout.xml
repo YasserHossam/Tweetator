@@ -30,7 +30,7 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentRight="true"
                 android:text="Tweet"
-                android:background="#ff51aaf7" />
+                android:background="@drawable/tweet_button" />
             <ImageButton
                 android:id="@+id/refreshButton"
                 android:layout_width="wrap_content"

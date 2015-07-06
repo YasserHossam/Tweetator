@@ -10,13 +10,18 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.media.Image;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.support.v4.app.FragmentActivity;
+import android.support.v7.app.ActionBar;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
@@ -97,6 +102,20 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
     int pageNumber;
     User clickedUser;
     String tweetOrReply;
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu)
+    {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu_start_page, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        return super.onOptionsItemSelected(item);
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
@@ -104,6 +123,10 @@ public class TimelineActivity extends FragmentActivity implements View.OnClickLi
         tweetOrReply="tweet";
         app.setContext(this);
         currentActivity=app.getContext();
+      /*  android.app.ActionBar actionBar=getActionBar();
+        int titleId = getResources().getIdentifier("action_bar_title", "id", "android");
+        TextView actionBarTitle=(TextView)findViewById(titleId);
+        actionBarTitle.setTextColor(Color.WHITE);*/
         super.onCreate(savedInstanceState);
         setContentView(R.layout.timeline_layout);
         refreshButton=(ImageButton)findViewById(R.id.refreshButton);

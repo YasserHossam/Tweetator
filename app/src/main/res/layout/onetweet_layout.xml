@@ -92,7 +92,7 @@
                         android:layout_height="match_parent"
                         android:src="@drawable/reply_hover"
                         android:layout_marginRight="7dp"
-                        android:background="#ffffffff" />
+                        android:background="@drawable/action_butttons" />
                     <ImageButton
                         android:id="@+id/favouriteButton"
                         android:layout_width="0dp"
@@ -100,14 +100,14 @@
                         android:layout_marginRight="7dp"
                         android:layout_height="match_parent"
                         android:src="@drawable/favorite_hover"
-                        android:background="#ffffffff"/>
+                        android:background="@drawable/action_butttons"/>
                     <ImageButton
                         android:id="@+id/retweetButton"
                         android:layout_width="0dp"
                         android:layout_weight=".30"
                         android:layout_height="match_parent"
                         android:src="@drawable/retweet_hover"
-                        android:background="#ffffffff"
+                        android:background="@drawable/action_butttons"
                         />
                 </LinearLayout>
             </RelativeLayout>
