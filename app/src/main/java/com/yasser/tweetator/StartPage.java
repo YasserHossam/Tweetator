@@ -205,7 +205,11 @@ public class StartPage extends Activity implements View.OnClickListener
             protected void onPostExecute(String s) {
                 super.onPostExecute(s);
                 if(s!=null)
-                startActivity((new Intent(Intent.ACTION_VIEW, Uri.parse(s))));
+                {
+                    Intent intent=new Intent(Intent.ACTION_VIEW, Uri.parse(s));
+                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                    startActivity(intent);
+                }
                 else
                 {
                     loadingBar.setVisibility(View.INVISIBLE);

@@ -12,7 +12,7 @@
            parent="@android:style/Widget.Holo.Light.ActionBar">
         <item name="android:background">#ff15a3f7</item>
         <item name="android:titleTextStyle">@style/myTheme.ActionBar.Text</item>
-        <item name="android:icon">@android:color/transparent</item>
+        <item name="android:icon">@drawable/twitter_bird</item>
 
     </style>
     <style name="myTheme.ActionBar.Text" parent="@android:style/TextAppearance">

@@ -3,8 +3,10 @@ package TwitterHelper;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.media.Image;
+import android.os.AsyncTask;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,8 +21,12 @@ import com.yasser.tweetator.TimelineActivity;
 
 import android.widget.TextView;
 
+import org.w3c.dom.Text;
+
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
+import java.sql.Time;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,6 +59,7 @@ public class TweetStatusAdapter extends ArrayAdapter<TweetStatus>
             row = inflater.inflate(resource, parent, false);
 
             holder = new TweetStatusHolder();
+            holder.showMediaButton=(ImageButton)row.findViewById(R.id.showMediaButton);
             holder.profilePicture = (ImageView)row.findViewById(R.id.profiePictureImageView);
             holder.status = (TextView)row.findViewById(R.id.statusTextView);
             holder.userName = (TextView)row.findViewById(R.id.userNameTextView);
@@ -60,6 +67,9 @@ public class TweetStatusAdapter extends ArrayAdapter<TweetStatus>
             holder.reply=(ImageButton)row.findViewById(R.id.replyButton);
             holder.retweet=(ImageButton)row.findViewById(R.id.retweetButton);
             holder.favourite=(ImageButton)row.findViewById(R.id.favouriteButton);
+            holder.retweetState=(TextView)row.findViewById(R.id.retweetState);
+            holder.twitterName=(TextView)row.findViewById(R.id.twitterNameTextView);
+            holder.attachedPhoto=(ImageView)row.findViewById(R.id.attachedPhoto);
             row.setTag(holder);
         }
         else
@@ -67,12 +77,44 @@ public class TweetStatusAdapter extends ArrayAdapter<TweetStatus>
             holder = (TweetStatusHolder)row.getTag();
         }
         TweetStatus tweetStatus = data.get(position);
+        holder.attachedPhoto.setTag(tweetStatus);
         holder.profilePicture.setImageBitmap(tweetStatus.getProfilePicture());
         holder.profilePicture.setTag(tweetStatus);
         holder.profilePicture.setOnClickListener(this.profilePictureListener);
         holder.status.setText(tweetStatus.status);
         holder.userName.setText(tweetStatus.userName);
         holder.time.setText(tweetStatus.time);
+        if(tweetStatus.hasPhotoAttached)
+        {
+            if(tweetStatus.isPhotoAttachedLoaded)
+            {
+                holder.showMediaButton.setVisibility(View.GONE);
+                holder.attachedPhoto.setVisibility(View.VISIBLE);
+                holder.attachedPhoto.setImageBitmap(tweetStatus.getPhotoAttached());
+            }
+            else
+            {
+                holder.showMediaButton.setVisibility(View.VISIBLE);
+                holder.showMediaButton.setOnClickListener(mediaButtonListener);
+                holder.showMediaButton.setTag(holder.attachedPhoto);
+                holder.attachedPhoto.setVisibility(View.GONE);
+            }
+        }
+        else
+        {
+            holder.showMediaButton.setVisibility(View.GONE);
+            holder.attachedPhoto.setVisibility(View.GONE);
+        }
+        if(tweetStatus.isRetweet)
+        {
+            holder.retweetState.setVisibility(View.VISIBLE);
+            holder.retweetState.setText(tweetStatus.retweetUserName+" retweeted");
+        }
+        else
+        {
+            holder.retweetState.setVisibility(View.GONE);
+        }
+        holder.twitterName.setText("@"+tweetStatus.twitterName);
         if(tweetStatus.isFavourited)
             holder.favourite.setImageResource(R.drawable.favorite_on);
         else
@@ -84,27 +126,32 @@ public class TweetStatusAdapter extends ArrayAdapter<TweetStatus>
         holder.favourite.setOnClickListener(tweetListener);
         holder.favourite.setTag("favourite%" + tweetStatus.tweetID + "%" + tweetStatus.isFavourited);
         holder.reply.setOnClickListener(tweetListener);
-        holder.reply.setTag("reply%" + tweetStatus.tweetID + "%" + tweetStatus.userName);
+        holder.reply.setTag("reply%" + tweetStatus.tweetID + "%" + tweetStatus.twitterName);
         holder.retweet.setOnClickListener(tweetListener);
         holder.retweet.setTag("retweet%"+tweetStatus.tweetID+"%"+tweetStatus.isRetweeted+"%"+tweetStatus.currentUserRetweetId);
         return row;
     }
     static class TweetStatusHolder
     {
-        ImageView profilePicture;
-        TextView status,userName,time;
-        ImageButton favourite,reply,retweet;
+        ImageView profilePicture,attachedPhoto;
+        TextView status,userName,time,twitterName,retweetState;
+        ImageButton favourite,reply,retweet,showMediaButton;
     }
+    private View.OnClickListener mediaButtonListener=new View.OnClickListener()
+    {
+        @Override
+        public void onClick(View v)
+        {
+            ((TimelineActivity)context).loadAttachedPhoto(v);
+        }
+    };
     private View.OnClickListener profilePictureListener=new View.OnClickListener()
     {
         @Override
         public void onClick(View v)
         {
-            Intent intent=new Intent(v.getContext(),TimelineActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             TweetStatus profileClicked=(TweetStatus)v.getTag();
-            intent.putExtra("profileClicked",profileClicked);
-            v.getContext().startActivity(intent);
+            ((TimelineActivity)context).onProifleClicked(profileClicked);
         }
     };
     private View.OnClickListener tweetListener= new View.OnClickListener()
@@ -167,15 +214,26 @@ public class TweetStatusAdapter extends ArrayAdapter<TweetStatus>
                     v.setTag("retweet%" + tweetID + "%" + false+"%"+currentUserRetweetId);
                 }
             }
-
-            Intent intent=new Intent(v.getContext(),TimelineActivity.class);
+            if(buttonType.equals("reply"))
+            {
+                ((TimelineActivity)context).onReplyClicked(tweetID,userName);
+            }
+            else if(buttonType.equals("favourite"))
+            {
+                ((TimelineActivity)context).onFavouriteClicked(tweetID,isFavouritedOrRetweeted);
+            }
+            else if(buttonType.equals("retweet"))
+            {
+                ((TimelineActivity)context).onRetweetClicked(tweetID,currentUserRetweetId,isFavouritedOrRetweeted);
+            }
+            /*Intent intent=new Intent(v.getContext(),TimelineActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             intent.putExtra("buttonType",buttonType);
             intent.putExtra("tweetID",tweetID);
             intent.putExtra("userName",userName);
             intent.putExtra("isFavouritedOrIsRetweeted",isFavouritedOrRetweeted);
             intent.putExtra("curretUserRetweetId",currentUserRetweetId);
-            v.getContext().startActivity(intent);
+            v.getContext().startActivity(intent);*/
         }
     };
 }
